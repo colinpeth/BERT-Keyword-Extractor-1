@@ -45,10 +45,10 @@ for i, k in enumerate(txt):
 
 def convert(key):
     sentences = ""
-    for line in open(train_path + "/" + filekey[key], 'r'):
+    for line in open(train_path + "/" + filekey[key], 'r', encoding = 'utf-8'):
         sentences += (" " + line.rstrip())
     tokens = sent_tokenize(sentences)
-    key_file = open(train_path + "/" + str(key),'r')
+    key_file = open(train_path + "/" + str(key),'r', encoding = 'utf-8')
     keys = [line.strip() for line in key_file]
     key_sent = []
     labels = []
@@ -160,7 +160,7 @@ valid_dataloader = DataLoader(valid_data, sampler=valid_sampler, batch_size=bs)
 model = BertForTokenClassification.from_pretrained("bert-base-uncased", num_labels=len(tag2idx))
 
 
-model = model.cuda()
+model = model.cpu()
 
 
 FULL_FINETUNING = True
@@ -200,6 +200,10 @@ for _ in trange(epochs, desc="Epoch"):
         batch = tuple(t.to(device) for t in batch)
         b_input_ids, b_input_mask, b_labels = batch
         # forward pass
+        b_input_mask = torch.tensor(b_input_mask).to(torch.long)
+        b_labels = torch.tensor(b_labels).to(torch.long)
+        b_input_ids = torch.tensor(b_input_ids).to(torch.long)
+        
         loss = model(b_input_ids, token_type_ids=None,
                      attention_mask=b_input_mask, labels=b_labels)
         # backward pass
@@ -225,6 +229,9 @@ for _ in trange(epochs, desc="Epoch"):
         b_input_ids, b_input_mask, b_labels = batch
         
         with torch.no_grad():
+            b_input_mask = torch.tensor(b_input_mask).to(torch.long)
+            b_labels = torch.tensor(b_labels).to(torch.long)
+            b_input_ids = torch.tensor(b_input_ids).to(torch.long)
             tmp_eval_loss = model(b_input_ids, token_type_ids=None,
                                   attention_mask=b_input_mask, labels=b_labels)
             logits = model(b_input_ids, token_type_ids=None,
@@ -260,6 +267,9 @@ for batch in valid_dataloader:
     b_input_ids, b_input_mask, b_labels = batch
 
     with torch.no_grad():
+        b_input_mask = torch.tensor(b_input_mask).to(torch.long)
+        b_labels = torch.tensor(b_labels).to(torch.long)
+        b_input_ids = torch.tensor(b_input_ids).to(torch.long)
         tmp_eval_loss = model(b_input_ids, token_type_ids=None,
                               attention_mask=b_input_mask, labels=b_labels)
         logits = model(b_input_ids, token_type_ids=None,
@@ -283,6 +293,3 @@ valid_tags = [[tags_vals[l_ii] for l_ii in l_i] for l in true_labels for l_i in 
 print("Validation loss: {}".format(eval_loss/nb_eval_steps))
 print("Validation Accuracy: {}".format(eval_accuracy/nb_eval_steps))
 print("Validation F1-Score: {}".format(f1_score(pred_tags, valid_tags)))
-
-
-
